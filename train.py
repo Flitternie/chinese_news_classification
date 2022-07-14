@@ -13,7 +13,7 @@ from torch.nn.parallel import DistributedDataParallel as DDP
 from transformers import AutoConfig, AutoModelForSequenceClassification, AutoTokenizer
 from transformers import set_seed, get_linear_schedule_with_warmup
 
-from misc import *
+from utils import *
 from inference import validate
 
 logging.basicConfig(stream=sys.stdout, level=logging.INFO, format='%(asctime)s %(levelname)-8s %(message)s')

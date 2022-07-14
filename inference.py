@@ -9,7 +9,7 @@ import numpy as np
 from tqdm import tqdm
 from transformers import AutoConfig, AutoModelForSequenceClassification, AutoTokenizer
 
-from misc import *
+from utils import *
 
 logging.basicConfig(stream=sys.stdout, level=logging.INFO, format='%(asctime)s %(levelname)-8s %(message)s')
 logFormatter = logging.Formatter('%(asctime)s %(levelname)-8s %(message)s')
