@@ -152,7 +152,7 @@ def main():
         logging.info(k+':'+str(v))
 
     seed_everything(args.seed)
-    test(args)
+    inference(args)
 
 
 if __name__ == '__main__':
