@@ -41,6 +41,16 @@ class CustomizedDataset(Dataset):
             self.target_ids[idx]
         )
 
+def load_data(file_path):
+    data = json.load(open(file_path, 'r'))
+    data = ([x['content'] for x in data], [x['topic_id'] for x in data])
+    return data
+
+def load_inference_data(file_path):
+    data = json.load(open(file_path, 'r'))
+    data = ([x['content'] for x in data], [-1 for x in data])
+    return data
+    
 def load_and_split_data(file_path):
     data = json.load(open(file_path, 'r'))
     random.shuffle(data)
@@ -54,7 +64,7 @@ def prepare_data(args, data, tokenizer, training=True, distributed=False):
     srcs, tgts = data
     if len(set(tgts)) > args.num_labels:
         raise Exception("Number of labels {} exceeds the limit {}".format(len(set(tgts)), args.num_labels))
-    elif len(set(tgts)) < args.num_labels:
+    elif len(set(tgts)) < args.num_labels and not args.generate:
         print("Number of labels {} is less than the limit {}".format(len(set(tgts)), args.num_labels))
     dataset = CustomizedDataset(srcs, tgts, tokenizer)
     if distributed and args.n_gpus > 1:

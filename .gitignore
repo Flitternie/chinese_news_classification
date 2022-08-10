@@ -1,7 +1,8 @@
 .vscode
 *.json
-data/
+*data/
 output/
+
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
