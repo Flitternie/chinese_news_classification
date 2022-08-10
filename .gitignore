@@ -1,7 +1,9 @@
 .vscode
 *.json
+*.zip
 *data/
 output/
+
 
 
 # Byte-compiled / optimized / DLL files
