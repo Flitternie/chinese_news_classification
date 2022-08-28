@@ -11,6 +11,39 @@ from torch.utils.data.distributed import DistributedSampler
 doc_topics = ['会议', '会见', '调研', '活动', '批示']
 paragraph_topics = ['经济', '健康', '农业', '劳动力', '社会福利', '文化教育', '环境', '能源', '基建', '住房', '金融', '科技', '应急管理', '财税', '政府', '组织', '宣传', '政法', '纪检', '统战', '人大政协', '国防', '综合']
 
+from pdfminer.pdfinterp import PDFResourceManager, PDFPageInterpreter
+from pdfminer.converter import TextConverter
+from pdfminer.layout import LAParams
+from pdfminer.pdfpage import PDFPage
+from io import StringIO
+
+def extract_pdf_content(pdf):
+    rsrcmgr = PDFResourceManager()
+    codec = 'utf-8'
+    outfp = StringIO()
+    laparams = LAParams()
+    device = TextConverter(rsrcmgr=rsrcmgr, outfp=outfp, laparams=laparams)
+    with open(pdf, 'rb') as fp:
+        interpreter = PDFPageInterpreter(rsrcmgr, device)
+        password = ""
+        maxpages = 0
+        caching = True
+        pagenos=set()
+        for page in PDFPage.get_pages(fp, pagenos, maxpages=maxpages, password=password,caching=caching, check_extractable=True):
+            interpreter.process_page(page)
+    mystr = outfp.getvalue()
+    device.close()
+    outfp.close()
+    return mystr
+
+def preprocess_pdf(pdf_path):
+    extracted_text = extract_pdf_content(pdf_path)
+    preprocessed_text = []
+    for i in extracted_text.split(' \n '):
+        i = i.replace('\n', '').replace(' ', '').replace('　', '').strip()
+        preprocessed_text.append(i)
+    return preprocessed_text
+
 class CustomizedDataset(Dataset):
     def __init__(self, srcs, tgts, tokenizer):
         self.tokenizer = tokenizer

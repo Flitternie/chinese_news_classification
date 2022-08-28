@@ -3,19 +3,69 @@ import sys
 import time
 import logging
 import argparse
-from unittest import load_tests
+import scipy
+from unittest import load_tests, result
 
 import torch
 import numpy as np
 from tqdm import tqdm
 from transformers import AutoConfig, AutoModelForSequenceClassification, AutoTokenizer
 
-from utils import *
+from utils import doc_topics, paragraph_topics, seed_everything, load_data, load_inference_data, prepare_data
 
 logging.basicConfig(stream=sys.stdout, level=logging.INFO, format='%(asctime)s %(levelname)-8s %(message)s')
 logFormatter = logging.Formatter('%(asctime)s %(levelname)-8s %(message)s')
 rootLogger = logging.getLogger()
-import warnings
+
+class NewsClassifier():
+    def __init__(self, model_path, num_classes):
+        self.device = 'cpu'
+        logging.info("Create model.........")
+        _, model_class, tokenizer_class = (AutoConfig, AutoModelForSequenceClassification, AutoTokenizer)
+        self.tokenizer = tokenizer_class.from_pretrained(model_path)
+
+        model = model_class.from_pretrained(model_path)
+        model.resize_token_embeddings(len(self.tokenizer))
+        self.model = model.to(self.device)
+        self.model.eval()
+        self.model = self.model.module if hasattr(self.model, "module") else self.model
+
+        self.num_classes = num_classes
+        
+        
+    def classify(self, text):
+        with torch.no_grad():
+            input = self.tokenizer(text, max_length=512, truncation=True, return_tensors='pt')
+            source_ids, source_mask = input['input_ids'], input['attention_mask']
+            inputs = {
+                "input_ids": source_ids.to(self.device),
+                "attention_mask": source_mask.to(self.device),
+            }
+            result = self.model(**inputs).logits
+            confidence = 1 - scipy.stats.entropy(torch.softmax(self.model(**inputs).logits, -1)[-1], base=2)
+            assert result.shape[-1] == self.num_classes
+            result = result.argmax(axis=-1).cpu().numpy()[0]
+        return result, confidence
+    
+
+class NewsClassifierForDoc(NewsClassifier):
+    def __init__(self, model_path):
+        super().__init__(model_path, num_classes=len(doc_topics))
+    
+    def classify(self, text):
+        result, confidence = super().classify(text)
+        return doc_topics[result], confidence
+
+
+class NewsClassifierForPara(NewsClassifier):
+    def __init__(self, model_path):
+        super().__init__(model_path, num_classes=len(paragraph_topics))
+    
+    def classify(self, text):
+        result, confidence = super().classify(text)
+        return paragraph_topics[result], confidence
+
+
 
 def validate(args, model, data, device):
     model.eval()
@@ -122,7 +172,6 @@ def inference(args):
                 for i in range(len(outputs)):
                     if outputs[i] != test_tgts[i]:
                         f.write(str(outputs[i]) + '\t' + str(test_tgts[i]) + '\t' + str(test_srcs[i]) + '\n')
-            
 
 def main():
     parser = argparse.ArgumentParser()

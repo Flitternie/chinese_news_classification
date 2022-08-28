@@ -1,5 +1,6 @@
 .vscode
 *.json
+*.xlsx
 *.zip
 *data/
 output/
